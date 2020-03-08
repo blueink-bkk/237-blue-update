@@ -180,6 +180,24 @@ Object.assign(env, argv);
 
 const {verbose, root:www_root, assets, force} = env;
 
+if (!env.ya_store) {
+  console.log(`env.ya_store missing -exit-`)
+  return;
+}
+if (!fs.existsSync(env.ya_store)) {
+  console.log(`env.ya_store file-not-found -exit-`)
+  return;
+}
+
+if (!env.articles) {
+  console.log(`env.articles missing -exit-`)
+  return;
+}
+if (!fs.existsSync(env.articles)) {
+  console.log(`env.articles file-not-found -exit-`)
+  return;
+}
+
 
 /*
     Each folder in ya-store start with <pageno>
