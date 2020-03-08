@@ -354,6 +354,11 @@ for (const ai of Object.keys(ya_store)) {
   })
 }
 
+console.log(`301-enroll-new-products:
+  env.ya_store (input):${env.ya_store}
+  env.articles (output):${env.articles}
+  `)
+
 if (u_Count >0) {
   console.log(`${u_Count} files enrolled`)
 } else {
