@@ -125,8 +125,6 @@ async function get_new_products_dir() {
 
 
 
-
-
 async function main() {
   console.log(`@110 Massive startup w/passwd: <${password}>`);
   db = await Massive({
