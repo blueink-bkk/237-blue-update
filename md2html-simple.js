@@ -5,6 +5,7 @@ const assert = require('assert')
 
 
 function fix_yaml(data) { // NO.
+throw 'Obsolete@8';
   const v = data.split(/\-\-\-/g);
   assert(!v[0])
   assert(v.length == 3)
@@ -13,14 +14,26 @@ function fix_yaml(data) { // NO.
   return v.join('---')
 }
 
+
+function fix_metadata(s) {
+  const v = s.split('\n');
+  v.forEach((li,j) =>{
+    v[j] = li.replace(/^([^:]*):\s*/gm,'$1<<>>').replace(/:/g,'~!~').replace(/<<>>/g,': ')
+  })
+  return v.join('\n')
+}
+
+
 function md2html(data) {
-  data = fix_yaml(data);
+//  data = fix_yaml(data);
   const v = data.trim().split(/\-\-\-/g); //match(yamlBlockPattern);
   assert(!v[0])
   assert(v.length == 3)
 
   //console.log(v[1]);
   //console.log(v[2]);
+
+  v[1] = fix_metadata(v[1]) // :::: only 1 per line.
 
   var json = yaml.safeLoad(v[1], 'utf8');
 
