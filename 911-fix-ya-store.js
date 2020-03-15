@@ -7,13 +7,13 @@ const jsonfile = require('jsonfile')
 const yaml = require('js-yaml');
 
 const adir = '/www/ultimheat.co.th/article'
-const ya_store = '/home/dkz/tmp/ya-store'
+const ya_store = '/www/ultimheat.co.th/ya-store'
 
 const h = {};
 
 for (const fn of walkSync(ya_store, ['\.md$'])) {
   const {dir, base} = path.parse(path.relative(ya_store,fn));
-  console.log(`@89: <${dir}> <${base}>`)
+//  console.log(`@89: <${dir}> <${base}>`)
   assert(!h[dir])
   h[dir] = {fn}; // full path
 
@@ -26,21 +26,18 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
   /***********************************************
     get xid from dir
   ************************************************/
-
-  const regex = /^(\d+)\^.*/; // ya-format
-  const retv = dir.match(regex)
-  if (!retv) {
-    console.log(`Invalid file syntax: <${dir}>`)
-    throw 'fatal@31'
-  }
-
-  const xid = retv[1]
-  assert (xid == dir.substring(0,4));
+	/*
+  */
+		const xid = dir.substring(0,4);
 
   const article_md = path.join(adir,xid,'index.md')
   if (fs.existsSync(article_md)) {
-    fs.unlinkSync(fn); // original in ya
-    fs.linkSync(fn2,article_md)
+	  console.log(`move <${article_md}> <${fn2}>`)
+//	  continue;
+    fs.unlinkSync(fn2); // original in ya
+    fs.linkSync(article_md,fn2)
+  } else {
+  console.log(`article <${article_md}> not found`)
   }
 }
 

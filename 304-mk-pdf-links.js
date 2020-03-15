@@ -4,10 +4,10 @@ const fs = require('fs')
 const path = require('path')
 const find = require('find');
 
-const ya_store = '/home/dkz/tmp/224-co.th-dkz/en/en/pdf/';
-const dest_folder = '/home/dkz/tmp/304-pdf-links';
+const ya_store = '/www/ultimheat.co.th/ya-store/';
+const dest_folder = '/www/ultimheat.co.th/pdf-links/';
 
-const files = find.fileSync(/\.pdf$/, ya_store);
+const files = find.fileSync(/\.jpg$/, ya_store);
 
 //console.log(files)
 
