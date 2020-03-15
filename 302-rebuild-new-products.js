@@ -47,7 +47,7 @@ let {output} =  env;
 const fpath = argv._[0];
 
 if (!fpath) {
-  console.log(`Missing index.html filename`)
+  console.log(`Missing path to index.html or new-products.html`)
   return;
 }
 
@@ -261,18 +261,34 @@ revlist.forEach(xid =>{
     xdir += '^' + dir
   }
 
-  div_row.append(`<div class="col-lg-4 col-md-6">
-  <article id="${xid}" class="card new-card js-e3article">
-  <img src="./${xdir}/${data.img}" class="card-imgs mb-2">
-  <small class="text-grey mb-2"><b>${data.sku}</b> </small>
-  ${html}
-  <div class="btns">
-  <a href="./${xdir}/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
-  <span class="number-btn">${xid}</span>
-  </div>
-  </article>
-  </div>
-    `)
+
+  if (false) {
+    div_row.append(`<div class="col-lg-4 col-md-6">
+    <article id="${xid}" class="card new-card js-e3article">
+    <img src="./${xdir}/${data.img}" class="card-imgs mb-2">
+    <small class="text-grey mb-2"><b>${data.sku}</b> </small>
+    ${html}
+    <div class="btns">
+    <a href="./${xdir}/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
+    <span class="number-btn">${xid}</span>
+    </div>
+    </article>
+    </div>
+      `)
+  } else {
+    div_row.append(`<div class="col-lg-4 col-md-6">
+    <article id="${xid}" class="card new-card js-e3article">
+    <img src="https://jpci-assets.us-east-1.linodeobjects.com/${data.img}" class="card-imgs mb-2">
+    <small class="text-grey mb-2"><b>${data.sku}</b> </small>
+    ${html}
+    <div class="btns">
+    <a href="https://jpci-assets.us-east-1.linodeobjects.com/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
+    <span class="number-btn">${xid}</span>
+    </div>
+    </article>
+    </div>
+      `)
+  }
 })
 
 

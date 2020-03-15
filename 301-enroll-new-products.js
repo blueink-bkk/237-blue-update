@@ -145,7 +145,6 @@ const assert = require('assert');
 const yaml = require('js-yaml');
 
 const pool_images = '/www/ultimheat.co.th/new-images'
-const regex = /^(\d+)\^.*/; // ya-format
 //en/new-products.html';
 
 
@@ -200,14 +199,15 @@ if (!fs.existsSync(env.articles)) {
 
 
 /*
-    Each folder in ya-store start with <pageno>
-    create an index h[pageno] => folder
+    Each folder in ya-store start with article-ID
+\    create an index h[ai] => folder
 */
 
 
 const ya_store ={}; // ya-store (minus) /en/new-products.html~1200.md
 const v = fs.readdirSync(env.ya_store);
 (verbose >0) && console.log(`@65 ya-store dir:${v.length}`)
+const regex = /^(\d+)\^.*/; // ya-format
 
 for (let fpath of v) {
   /*
@@ -228,14 +228,16 @@ for (let fpath of v) {
   continue;
   }
 
-  const iSeq = retv[1]
-  ya_store[iSeq] = fpath; // h[iSeq] => folder name.
+  const ai = retv[1]
+  // check if unique
+  assert(!ya_store[ai])
+  ya_store[ai] = fpath; // h[iSeq] => folder name.
 } // loop ya-store files.
 
 (verbose >0) && console.log(`@96 index.length:${Object.keys(ya_store).length}`)
 
 /*
-    HERE: h[pageno] => path-to-folder
+    HERE: h[ai] => path-to-folder
 */
 
 
@@ -254,17 +256,17 @@ for (let fpath of v) {
 const v2 = fs.readdirSync(env.articles); // EXISTING
 (verbose >0) && console.log(`@112 existing articles.length:${v2.length}`)
 
-for (let iSeq of v2) {
+for (let ai of v2) {
 //  (verbose>0) && console.log(`md-file iSeq:${iSeq} <${fn}>`)
 
-  if (ya_store[iSeq]) {
-    (verbose>0) && console.log(`found ya_store[${iSeq}] => removed`)
+  if (ya_store[ai]) {
+    (verbose>0) && console.log(`found in ya_store[${ai}] => already exists.`)
     if (false) {
-      ya_store[iSeq] = null; // ya-store cannot be loaded twice.
+      ya_store[ai] = null; // ya-store cannot be loaded twice.
       // MEANS NO UPDATE...........
     }
   } else {
-    (verbose>0) && console.log(`alert ya_store[${iSeq}] not in ya-store => ignored`)
+    (verbose>0) && console.log(`alert ya_store[${ai}] not in ya-store => ignored`)
   }
 }
 
@@ -370,7 +372,7 @@ for (const ai of Object.keys(ya_store)) {
       console.log(`ignoring:`,{fn})
     }
   })
-}
+} // each product/folder in ya-store.
 
 console.log(`301-enroll-new-products:
   env.ya_store (input):${env.ya_store}
