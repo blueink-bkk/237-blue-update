@@ -23,8 +23,16 @@ const path = require('path')
 const assert = require('assert');
 const cheerio = require('cheerio');
 const md2html = require('./md2html-simple.js')
+const yaml = require('js-yaml')
 
 const env = {};
+
+const env_yaml = (fs.existsSync('./.env.yaml')) ?
+  yaml.safeLoad(fs.readFileSync('./.env.yaml', 'utf8')) : {};
+console.log({env_yaml})
+
+Object.assign(env, env_yaml);
+
 
 const argv = require('yargs')
   .alias('v','verbose').count('verbose')
@@ -43,11 +51,17 @@ const argv = require('yargs')
 Object.assign(env, argv);
 
 const {verbose, input:www_root, assets, force, 'dry-run':dry_run} = env;
+
+;(verbose >0) && console.log({env})
+
+
 let {output} =  env;
+let {ya_store} =  env; // where to look for MD-files
+assert(ya_store)
 const fpath = argv._[0];
 
 if (!fpath) {
-  console.log(`Missing path to index.html or new-products.html`)
+  console.log(`Missing path to <new-products/index.html> or <new-products.html>`)
   return;
 }
 
@@ -96,11 +110,17 @@ const $ = cheerio.load(html)
 /****************************
 
   Get metadata - to determine version
+!!!
 
+  ya-store is where we look for md.
 *****************************/
 
-let {dir:md_dir, base} = path.parse(fpath);
-console.log(`@103: dir:${md_dir}`)
+if (!ya_store) {
+  let {dir:ya_store, base} = path.parse(fpath);
+  console.log(`@103: ya-store:${ya_store}`)
+}
+
+
 
 
 /*
@@ -132,40 +152,37 @@ console.log(`@137: e3_version:"${e3_version}"`); // signal a virgin html => inse
 
 **************************************/
 
+if (false) {
+  switch (e3_version) {
+    case 'abatros': // original
+      // md-files are at the same level as html-file
+      // syntax is new-products.html#<xid>.md
+      // or index.html#<xid>.md
+      // => dir (unchanged)
+    break;
 
-switch (e3_version) {
-  case 'abatros': // original
-    // md-files are at the same level as html-file
-    // syntax is new-products.html#<xid>.md
-    // or index.html#<xid>.md
-    // => dir (unchanged)
-  break;
+    case 'editora':
+      // md-files are in sub-folder ACCORDING to (index.html)......
+      // ./en/new-products.html => (dir: ./en/) new-products/<xid>/index.md
+      // ./en/new-products/index.html => (dir: ./en/new-products/) new-products/<xid>/index.md
+      const {dir,base,name} = path.parse(fpath)
+      if (!fpath.endsWith('index.html')) {
+        ya_store = path.join(dir,name)
+      } else {
+        ya_store = dir
+      }
 
-  case 'editora':
-    // md-files are in sub-folder ACCORDING to (index.html)......
-    // ./en/new-products.html => (dir: ./en/) new-products/<xid>/index.md
-    // ./en/new-products/index.html => (dir: ./en/new-products/) new-products/<xid>/index.md
-    const {dir,base,name} = path.parse(fpath)
-    if (!fpath.endsWith('index.html')) {
-      md_dir = path.join(dir,name)
-    } else {
-      md_dir = dir
-    }
+      // in all cases, output should be new-products/index.html
 
-    // in all cases, output should be new-products/index.html
-
-  break;
+    break;
 
 
-  default:
-    console.log(`@144: Unknown e3_version <${e3_version}>
-      FATAL`);
-    return;
+    default:
+      console.log(`@144: Unknown e3_version <${e3_version}>
+        FATAL`);
+      return;
+  }
 }
-
-
-
-
 
 
 /*******************************
@@ -179,12 +196,14 @@ const walk = require('klaw-sync')
 let aCount =0;
 
 const h ={};
-
-walk(md_dir).forEach(file =>{
+walk(ya_store).forEach(file =>{
   if (file.path.endsWith('index.md')) {
     ;(verbose >0) && console.log(`@76: <${file.path}>`)
+    /*
     const [p,xid] = /\/([0-9]+)\/index.md$/.exec(file.path);
     ;(verbose >0) && console.log(`@187: xid:${xid}`)
+    */
+    const {dir:xid,base} = path.parse(path.relative(ya_store,file.path))
     if (h[xid]) {
       console.log(`@93: ALERT duplicate entries for #${xid}
         <${h[xid]}>
@@ -238,7 +257,7 @@ const div_row = $('body').find('section#new-products div.row');
 div_row.empty()
 
 revlist.forEach(xid =>{
-//  const {data, html} = read_md_file(path.join(md_dir, xid, 'index.md'));
+//  const {data, html} = read_md_file(path.join(ya_store, xid, 'index.md'));
 //  ;(verbose >0) && console.log(`@242: reading... <${h[xid]}>`)
   console.log(`@242: reading... <${h[xid]}>`)
   const {data, html} = read_md_file(h[xid]);
@@ -254,22 +273,25 @@ revlist.forEach(xid =>{
     return;
   }
 
+  /****
   // should be applied only for certain versions.
   let xdir = xid;
   if (h[xid].indexOf('^') >=0) {
     const {dir} = path.parse(h[xid].split('^')[1]); // horrible trick.
     xdir += '^' + dir
   }
+  *****/
 
+  const xid4 = xid.substring(0,4)
 
   if (false) {
     div_row.append(`<div class="col-lg-4 col-md-6">
-    <article id="${xid}" class="card new-card js-e3article">
-    <img src="./${xdir}/${data.img}" class="card-imgs mb-2">
+    <article id="${xid4}" class="card new-card js-e3article">
+    <img src="./${xid}/${data.img}" class="card-imgs mb-2">
     <small class="text-grey mb-2"><b>${data.sku}</b> </small>
     ${html}
     <div class="btns">
-    <a href="./${xdir}/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
+    <a href="./${xid}/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
     <span class="number-btn">${xid}</span>
     </div>
     </article>
@@ -277,13 +299,13 @@ revlist.forEach(xid =>{
       `)
   } else {
     div_row.append(`<div class="col-lg-4 col-md-6">
-    <article id="${xid}" class="card new-card js-e3article">
+    <article id="${xid4}" class="card new-card js-e3article">
     <img src="https://jpci-assets.us-east-1.linodeobjects.com/${data.img}" class="card-imgs mb-2">
     <small class="text-grey mb-2"><b>${data.sku}</b> </small>
     ${html}
     <div class="btns">
     <a href="https://jpci-assets.us-east-1.linodeobjects.com/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
-    <span class="number-btn">${xid}</span>
+    <span class="number-btn">${xid4}</span>
     </div>
     </article>
     </div>
@@ -295,26 +317,29 @@ revlist.forEach(xid =>{
 if (!output) {
   switch (e3_version) {
     case 'editora':
-      output = path.join(md_dir,'index.html')
+      output = path.join(ya_store,'index.html')
     break
     default:
       throw '@256: fatal'
   }
 }
 
-if (!output) {
-  if (!dry_run) {
-    fs.writeFileSync(fpath, $.html(), 'utf8');
-    console.log(`@248: original file <${fpath}> is updated.`)
+if (!dry_run) {
+  if (!output) {
+      fs.writeFileSync(fpath, $.html(), 'utf8');
+      console.log(`@248: original file <${fpath}> is updated.`)
   } else {
-    console.log(`@250: DRY-RUN - results not written on file system.`)
+    fs.writeFileSync(output, $.html(), 'utf8');
+    console.log(`@254: html-file written on <${output}>`)
   }
+
 } else {
-  fs.writeFileSync(output, $.html(), 'utf8');
-  console.log(`@254: html-file written on <${output}>`)
+  console.log(`@250: DRY-RUN - results not written on file system.`)
 }
 
-throw "stop"
+
+console.log(`@338: return... to check`)
+return;
 
 /*
 
