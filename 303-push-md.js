@@ -53,8 +53,10 @@ const argv = require('yargs')
   .alias('d','dir')
   .alias('a','all')
   .alias('c','commit')
+  .alias('P','purge')
   .options({
     'commit': {type:'boolean', default:false},
+    'purge': {type:'boolean', default:false},
   }).argv;
 console.log('commit:',{argv})
 
@@ -64,9 +66,9 @@ assert(env.user)
 assert(env.port)
 assert(env.host)
 assert(env.database)
-assert(env.root) // store
+assert(env.ya_store) // store
 
-const {root:root_folder, verbose} = env;
+const {ya_store, verbose, purge, commit} = env;
 const {host,port,user,database,password} = env;
 
 if (!password) {
@@ -80,7 +82,26 @@ if (!password) {
 // ==========================================================================
 
 /*
-  FIRST: get directory from server
+    FIRST GET LOCAL DIRECTORY
+*/
+
+const local_dir = {};
+
+;(verbose >0) && console.log(`@88 ya_store: <${ya_store}>`)
+for (const fn of walkSync(ya_store, ['\.md$'])) {
+  const {dir:sku, base} = path.parse(path.relative(ya_store,fn));
+  console.log(`@89: <${sku}> <${base}>`)
+  assert(!local_dir[sku])
+  local_dir[sku] = {fn}; // full path
+}
+
+;(verbose >0) && console.log(`@88 found ${Object.keys(local_dir).length} in ya_store: <${ya_store}>`)
+
+
+// ==========================================================================
+
+/*
+  THEN: get directory from server
 */
 
 let db;
@@ -102,6 +123,10 @@ async function get_new_products_dir() {
   });
 }
 
+
+
+
+
 async function main() {
   console.log(`@110 Massive startup w/passwd: <${password}>`);
   db = await Massive({
@@ -112,6 +137,11 @@ async function main() {
       password
   });
   console.log('Massive is ready.');
+
+  if (purge) {
+    db.adoc.remove_path('jpci.products.en')
+  }
+
 
   const remote_dir = {};
   const _v_remote_dir = await db.adoc.list_files('jpci.products.en');
@@ -124,13 +154,7 @@ async function main() {
 //  console.log(remote_dir); throw 'break@119'
 
 
-  /*********************
-      scan local folder ./en/new-product/<pageno>/index.md2
-      db.write_page for each new article (page)
-  **********************/
-  //await scan_local_folder(env.root)
-
-  function get_article_id(fn) {
+  function remove_fn_tail(fn) {
 //    const i =/\^/.exec(fn.split('^')[0])
 //    return fn.replace(/^.*\([0-9]+^\).*$/,'($1)')
     return fn.replace(/^.*\/([0-9]+)\^.*$/,'$1')
@@ -146,58 +170,61 @@ async function main() {
 
 
 
-  const local_dir = {};
-  const root_prefix_length = root_folder.length;
-
-  const w_Count =0;
-
-  for (const fn of walkSync(root_folder, ['\.md$'])) {
-
-    const {meta, md_code, mtime} = get_local(fn);
-//    console.log(mtime)
-//    console.log(new Date(mtime))
-
-    const ai = get_article_id(fn)
-    //console.log(`-- ai:${ai}`)
-    /*
-          - open the file
-          - compare checksum with server remote_dir
-          - if changed: reload.
-    */
+  //const root_prefix_length = ya_store.length;
 
 
-    if (remote_dir[ai] && remote_dir[ai].mtime) {
+  /***********************************************
+
+  upload from local-dir
+  only if NOT on remote
+  or local newer than remote.
+
+  ************************************************/
+
+
+  let w_Count =0;
+
+  for (const [xid, data] of Object.entries(local_dir)) {
+    ;(verbose >0) &&console.log(`@178 xid:${xid} ${(remote_dir[xid])?'':"NOT "}found in remote.`)
+//    const {meta, md_code, mtime} = get_local(data.fn);
+//    console.log(`@180: mtime:${mtime} <${data.fn}>`)
+    ;(!remote_dir[xid]) && console.log(`@181 ALERT xid:${xid} NOT found in remote.`)
+
+    const {meta, md_code, mtime} = get_local(data.fn);
+
+    if (remote_dir[xid]) continue; //////////////////// temp
+
+    if (remote_dir[xid] && remote_dir[xid].mtime) {
       //console.log(`@159: timeStamp ai:${ai} local:${mtime} remote:${remote_dir[ai].mtime}`)
-      if (mtime <= remote_dir[ai].mtime) continue;
+      if (mtime <= remote_dir[xid].mtime) continue;
     }
-    const jsonb = {
-      xid: ai
-    }
+
+    const jsonb = {xid};
 
     Object.assign(jsonb, meta, {
       timeStamp: new Date(),
       '.lang-en': md_code
     })
 
-    //console.log(yaml.safeDump(jsonb));
-    /*
-    const baseName = 'new-products.html';
-    const pageNo = ai;
-    */
-
-    const xid = ai;
     const raw_text = `${jsonb.article_id} - ${jsonb.sku} ` + jsonb['.lang-en'];
     const pageNo = 0;
 
-    console.log(`writing xid:${xid}...`)
-    const retv = await db.adoc.write_pagex('jpci.products.en', xid, pageNo, jsonb, raw_text);
-    w_Count ++;
+    if (commit) {
+      console.log(`writing xid:${xid}...`)
+      const retv = await db.adoc.write_pagex('jpci.products.en', xid, pageNo, jsonb, raw_text);
+      w_Count ++;
+    }
+
   }
 
-  console.log(`@127: found ${Object.keys(local_dir).length} article/files.`)
+
+  console.log(`@127: found ${Object.keys(local_dir).length} MD-files in <${ya_store}>`)
   close_db(`@107:`);
   return {w_Count, remote_Count}
 } // main
+
+
+
 
 
 try {
@@ -209,7 +236,7 @@ try {
     console.log('-eoj-');
   })
   .catch(err=>{
-    console.log(`@95 err:`,err)
+    console.log(`@95: err:`,err)
     close_db();
   });
 }
@@ -252,126 +279,6 @@ function *walkSync(dir,patterns) {
       console.log(`ALERT on file:${ path.join(dir, file)} err:`,err)
 //      console.log(`ALERT err:`,err)
       continue;
-    }
-  }
-}
-
-
-
-let nfiles =0;
-let npages =0;
-
-
-const etime = new Date().getTime();
-
-
-async function walk(db) {
-  return new Promise((resolve, reject) =>{
-    klaw(root_folder, {
-        //filter: (item)=>{return item.path.endsWith('.pdf')}
-        filter: (item)=> {
-//          console.log(`@144 filter nfiles:${nfiles}`)
-          return(nfiles<10) // no effect because
-        }
-    })
-    .on('data', async (item) =>{
-        let {path:fn} = item;
-        if (fn.endsWith('.pdf')) {
-  //        console.log(`file[${nfiles}]`, fn)
-          nfiles ++;
-          if (nfiles <=10*1000) {
-            console.log(`@155 ondata nfiles:${nfiles}`)
-            await upload_museum_pages(fn,db);
-            console.log(`===================================`)
-          }
-        }
-    })/*
-      .on('readable', function () {
-        let item
-        while ((item = this.read())) {
-          console.log(`x:`, item)
-        }
-      })*/
-    .on('error', (err, item) => {
-        console.log(err.message)
-        console.log(item.path) // the file the error occurred on
-        reject(err)
-    })
-    .on('end', () => {
-        console.log(`klaw done etime:${new Date().getTime() - etime}ms.`);
-        resolve({nfiles:999, npages:99999});
-    })
-  }) // promise
-} // walk
-
-
-async function upload_page() {
-
-}
-
-async function upload_museum_pages(fn,db) {
-  throw 'FATAL@282'
-//  const xid = path.dirname(fn).split('/'); // last one
-  (verbose >=2) && console.log(`@180 entering upload_museum_pages(${fn})`)
-  const dirname = path.dirname(fn);
-  let xid = dirname.substring(dirname.lastIndexOf('/'));
-  if (!xid) {
-    console.log(`@183:`,path.dirname(fn).split('/'))
-    console.log(`@184:`,path.dirname(fn).split('/')[-1])
-    throw 'FATAL'
-  }
-  if (xid[0] != '/') {
-    console.log(`@190:`,path.dirname(fn))
-    console.log(`@191 xid:`,xid)
-    throw 'FATAL';
-  }
-  xid = xid.substring(1);
-  console.log(`@182 XID:${xid}`)
-  const fn2 = fs.realpathSync(fn)
-  const baseName = path.basename(fn2);
-  const doc = await pdfjsLib.getDocument(fn2).promise;
-//  npages += doc.numPages;
-//  console.log(`[${nfiles++}] npages:${doc.numPages} <${fn}> `);
-
-  for (let pageNo=1; pageNo <= doc.numPages; pageNo++) {
-    const txt_fn = (fn + `-${('0000'+pageNo).substr(-4)}.txt`);
-    (verbose >=2) && console.log(`@203 processing page (${txt_fn}) commit=${argv.commit}`)
-    if (!fs.existsSync(txt_fn)) {
-      console.log(`@205 ALERT file-not-found: <${txt_fn}>`)
-      continue;
-    }
-
-    const raw_text = fs.readFileSync(txt_fn, 'utf8')
-
-    if (argv.commit) {
-      try {
-        npages ++;
-        console.log(`COMMIT page:${pageNo} total:${npages} files:${nfiles}`);
-//        console.log(`-- page ${pageNo} raw_text:${raw_text.length}`);
-//        const ts_vector = undefined;
-        const json_data = {xid}
-        const retv = await db.adoc.write_page('museum.pdf',baseName, pageNo, json_data, raw_text);
-        console.log(`@195 -- page ${nfiles}.${pageNo} raw_text.length:${raw_text.length} retv:`, {retv})
-      }
-      catch(err) {
-        console.log(err)
-      }
-    }
-  }; // each page
-}
-
-
-return;
-
-
-
-
-function _assert(b, o, err_message) {
-  if (!b) {
-    console.log(`[${err_message}]_ASSERT=>`,o);
-    console.trace(`[${err_message}]_ASSERT`);
-    throw {
-      message: err_message // {message} to be compatible with other exceptions.
     }
   }
 }
