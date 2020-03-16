@@ -5,6 +5,7 @@ const path = require('path');
 const assert = require('assert');
 const jsonfile = require('jsonfile')
 const yaml = require('js-yaml');
+const md2html = require('./md2html-simple.js')
 
 const env = {};
 
@@ -30,7 +31,7 @@ const argv = require('yargs')
 
 Object.assign(env, argv);
 
-const {verbose, articles, ya_store, 'dry-run':dry_run} = env;
+const {verbose, articles, ya_store, www_root, 'dry-run':dry_run} = env;
 
 // =======================================================================
 
@@ -61,6 +62,7 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
   let fix_req =0;
   if (fn2 != fn) {
     // NOT NORMALIZED - NEED FIX.
+    fix_req ++;
     const article_md = path.join(articles,xid4,'index.md')
     ;(verbose >0) && console.log(`@37: NEED FIX <${fn}>`)
     if (fs.existsSync(article_md)) {
@@ -74,10 +76,38 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
       console.log(`article <${article_md}> not found`)
     }
   } // need normalize.
+
+  /********************************************************
+  open md-file to get img, pdf.
+  MOVE jpeg and pdf into ya-store
+  *********************************************************/
+
+  const {data, html} = read_md_file(fn2);
+
+  const _src_jpeg = path.join(ya_store, dir, data.img)
+  if (!fs.existsSync(_src_jpeg)) {
+    ;(verbose >0) console.log(`@89: missing-file <${_src_jpeg}>`)
+    // should be in <www-root>/new-images/
+    const legacy_jpeg = path.join(www_root,'new-images',data.img)
+    if (!fs.existsSync(legacy_jpeg)) {
+      console.log(`@93: ALERT missing-file legacy <${legacy_jpeg}>`)
+    }
+  }
+
+  const _href_pdf = path.join(ya_store, dir, data.pdf)
+  if (!fs.existsSync(_href_pdf)) {
+    ;(verbose >0) console.log(`@89: missing-file <${_href_pdf}>`)
+    // should be in <www-root>/en/pdf/
+    const legacy_pdf = path.join(www_root,'en/pdf',data.pdf)
+    if (!fs.existsSync(legacy_pdf)) {
+      console.log(`@93: ALERT missing-file legacy <${legacy_pdf}>`)
+    }
+  }
+
 } // each fn.
 
 ;(dry_run) &&console.log(`DRY-RUN`)
-console.log(`@79: -eoj-
+console.log(`@79: -eoj- need fix for ${fix_req} md-file${(fix_req>0)?'s':''}
   ya-store:${ya_store}
   articles:${articles}
 `)
@@ -119,4 +149,9 @@ function *walkSync(dir,patterns) {
       continue;
     }
   }
+}
+
+function read_md_file(fp) {
+  const md = fs.readFileSync(fp,'utf8');
+return md2html(md);
 }
