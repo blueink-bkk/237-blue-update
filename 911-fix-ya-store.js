@@ -38,7 +38,7 @@ const h = {};
 
 for (const fn of walkSync(ya_store, ['\.md$'])) {
   const {dir, base} = path.parse(path.relative(ya_store,fn));
-//  console.log(`@89: <${dir}> <${base}>`)
+  ;(verbose >0) &&console.log(`@41: checking <${dir}> <${base}>`)
   assert(!h[dir])
   h[dir] = {fn}; // full path
 
@@ -58,7 +58,7 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
 
   ************************************************/
 
-
+  let fix_req =0;
   if (fn2 != fn) {
     // NOT NORMALIZED - NEED FIX.
     const article_md = path.join(articles,xid4,'index.md')
