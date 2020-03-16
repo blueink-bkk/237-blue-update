@@ -298,13 +298,16 @@ revlist.forEach(xid =>{
     </div>
       `)
   } else {
+    ;(verbose>1) &&console.log(`@301: img <${xid}/${data.img}>`)
+    const img_src = `https://jpci-assets.us-east-1.linodeobjects.com/${xid}/${data.img}`
+    const href_pdf = `https://jpci-assets.us-east-1.linodeobjects.com/${xid}/${data.pdf}`
     div_row.append(`<div class="col-lg-4 col-md-6">
     <article id="${xid4}" class="card new-card js-e3article">
-    <img src="https://jpci-assets.us-east-1.linodeobjects.com/${data.img}" class="card-imgs mb-2">
+    <img src="${img_src}" class="card-imgs mb-2">
     <small class="text-grey mb-2"><b>${data.sku}</b> </small>
     ${html}
     <div class="btns">
-    <a href="https://jpci-assets.us-east-1.linodeobjects.com/${data.pdf}" target="_blank" class="btn-red">Download PDF</a>
+    <a href="${href_pdf}" target="_blank" class="btn-red">Download PDF</a>
     <span class="number-btn">${xid4}</span>
     </div>
     </article>

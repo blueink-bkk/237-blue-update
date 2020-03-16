@@ -6,8 +6,33 @@ const assert = require('assert');
 const jsonfile = require('jsonfile')
 const yaml = require('js-yaml');
 
-const adir = '/www/ultimheat.co.th/article'
-const ya_store = '/www/ultimheat.co.th/ya-store'
+const env = {};
+
+const env_yaml = (fs.existsSync('./.env.yaml')) ?
+  yaml.safeLoad(fs.readFileSync('./.env.yaml', 'utf8')) : {};
+console.log({env_yaml})
+
+Object.assign(env, env_yaml);
+
+const argv = require('yargs')
+  .alias('v','verbose').count('verbose')
+  .alias('i','input')
+  .alias('s','soft-links')
+  .alias('o','output') // not rewriting on original
+  .alias('n','dry-run')
+//  .boolean('pg-monitor')
+//  .boolean('commit')
+  .alias('f','force') // create output folder
+  .options({
+    'dry-run': {type:'boolean', default:false},
+    'force': {type:'boolean', default:false},
+  }).argv;
+
+Object.assign(env, argv);
+
+const {verbose, articles, ya_store, 'dry-run':dry_run} = env;
+
+// =======================================================================
 
 const h = {};
 
@@ -22,24 +47,40 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
     fs.renameSync(fn,fn2)
   }
 
+  const xid4 = dir.substring(0,4);
 
   /***********************************************
-    get xid from dir
-  ************************************************/
-	/*
-  */
-		const xid = dir.substring(0,4);
+    fn : full path to original md-file
+    fn2 : is normalized name for md-file : <xid/sku>/index.md
+    article_md : alternate source for md-file in (/article/<xid4>)
 
-  const article_md = path.join(adir,xid,'index.md')
-  if (fs.existsSync(article_md)) {
-	  console.log(`move <${article_md}> <${fn2}>`)
-//	  continue;
-    fs.unlinkSync(fn2); // original in ya
-    fs.linkSync(article_md,fn2)
-  } else {
-  console.log(`article <${article_md}> not found`)
-  }
-}
+    for legacy-serie 11xx :
+
+  ************************************************/
+
+
+  if (fn2 != fn) {
+    // NOT NORMALIZED - NEED FIX.
+    const article_md = path.join(articles,xid4,'index.md')
+    ;(verbose >0) && console.log(`@37: NEED FIX <${fn}>`)
+    if (fs.existsSync(article_md)) {
+      if (!dry_run) {
+        console.log(`move <${article_md}> <${fn2}>`)
+    //	  continue;
+        fs.unlinkSync(fn2); // original in ya
+        fs.linkSync(article_md,fn2)
+      }
+    } else {
+      console.log(`article <${article_md}> not found`)
+    }
+  } // need normalize.
+} // each fn.
+
+;(dry_run) &&console.log(`DRY-RUN`)
+console.log(`@79: -eoj-
+  ya-store:${ya_store}
+  articles:${articles}
+`)
 
 
 function *walkSync(dir,patterns) {
