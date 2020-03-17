@@ -86,7 +86,7 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
 
   const _src_jpeg = path.join(ya_store, dir, data.img)
   if (!fs.existsSync(_src_jpeg)) {
-    ;(verbose >0) console.log(`@89: missing-file <${_src_jpeg}>`)
+    ;(verbose >0) &&console.log(`@89: missing-file <${_src_jpeg}>`)
     // should be in <www-root>/new-images/
     const legacy_jpeg = path.join(www_root,'new-images',data.img)
     if (!fs.existsSync(legacy_jpeg)) {
@@ -96,7 +96,7 @@ for (const fn of walkSync(ya_store, ['\.md$'])) {
 
   const _href_pdf = path.join(ya_store, dir, data.pdf)
   if (!fs.existsSync(_href_pdf)) {
-    ;(verbose >0) console.log(`@89: missing-file <${_href_pdf}>`)
+    ;(verbose >0) &&console.log(`@89: missing-file <${_href_pdf}>`)
     // should be in <www-root>/en/pdf/
     const legacy_pdf = path.join(www_root,'en/pdf',data.pdf)
     if (!fs.existsSync(legacy_pdf)) {
