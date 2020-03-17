@@ -317,13 +317,13 @@ revlist.forEach(xid =>{
 })
 
 
-if (!output) {
+if (false && !output) {
   switch (e3_version) {
     case 'editora':
       output = path.join(ya_store,'index.html')
     break
     default:
-      throw '@256: fatal'
+      throw '@256: fatal-e3-version'
   }
 }
 
@@ -337,7 +337,7 @@ if (!dry_run) {
   }
 
 } else {
-  console.log(`@250: DRY-RUN - results not written on file system.`)
+  console.log(`@250: DRY-RUN - results not written on file system -o <${output}>`)
 }
 
 
