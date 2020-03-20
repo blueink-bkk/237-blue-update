@@ -99,13 +99,14 @@ if (dry_run) {console.log('DRY-RUN');}
 function convert_include(fn) {
 //<img src="<?= base_url; ?>img/main-logo.png"
   return fs.readFileSync(fn,'utf8')
-  .replace(/<\?= base_url; \?>img\//g, s3_img)
+ 	.replace(/<\?= base_url; \?>img\//g, '/img/')
+	.replace(/<\?= base_url; \?>\/img\//g, '/img/')
 //    <script src="<?= base_url; ?>js/main.js"></script>
-  .replace(/<\?= base_url; \?>js\//g, s3_js)
+  .replace(/<\?= base_url; \?>js\//g, '/js/')
 // <link rel="stylesheet" href="/css/
-  .replace(/href="\/css\//g, 'href="' + s3_css)
+//  .replace(/href="\/css\//g, 'href="' + '/css/')
   // <?= base_url; ?>css/
-  .replace(/<\?= base_url; \?>css\//g, s3_css)
+  .replace(/<\?= base_url; \?>css\//g, '/css/')
   .replace(/<\?= base_url; \?>/g,base_url) // must be first
   .replace(/<\?php.*\?>/s,'')
 
@@ -170,7 +171,7 @@ function rebuild(lang) {
 //      <img src="<?= base_url; ?>new-images/1-61-4C.jpg" height="250" width="350" class="img-responsive">
 
 
-      .replace(/<\?= base_url; \?>img\//g, s3_img)
+      .replace(/<\?= base_url; \?>img\//g, '/img/')
 //      .replace(/url\(\.\.\/img\/\//g, 'url('+s3_img)
 //    <script src="<?= base_url; ?>js/main.js"></script>
 .replace(/<\?= base_url; \?>js\//g, s3_js)
@@ -179,7 +180,7 @@ function rebuild(lang) {
 // <?= base_url; ?>css/
 //.replace(/<\?= base_url; \?>css\//g, s3_css)
       .replace(/<\?= base_url; \?>new-images\//g,s3_new_images) // must be first
-      .replace(/<a href="http:\/\/www.ultimheat.com\//g,s3_en_pdf)
+      .replace(/<a href="http:\/\/www.ultimheat.com\//g,s3_pdf)
       .replace(/<\?= base_url; \?>/g,base_url) // must be first
       .replace(/<\?php include\('head.php'\); \?>/g, head)
       .replace(/<\?php include\('header.php'\); \?>/g, header)
