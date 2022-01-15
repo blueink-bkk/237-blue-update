@@ -23,7 +23,7 @@
     "js-yaml": "^3.13.1",
     "klaw": "^3.0.0",
     "klaw-sync": "^6.0.0",
-    "marked": "^0.7.0",
+    "marked": "^4.0.10",
     "massive": "^6.2.0",
     "minio": "^7.0.15",
     "node-git-server": "^0.6.0",
